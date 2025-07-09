@@ -1,4 +1,4 @@
-name: V2Ray Server with Localtunnel
+name: V2Ray Server with Localtunnel (Corrected)
 
 on:
   workflow_dispatch:
@@ -17,12 +17,10 @@ jobs:
 
       - name: Setup V2Ray
         run: |
-          # Download and prepare V2Ray
           wget -O v2ray.zip https://github.com/v2fly/v2ray-core/releases/latest/download/v2ray-linux-64.zip
           unzip v2ray.zip
           chmod +x v2ray
-
-          # Create V2Ray config file
+          
           UUID=$(cat /proc/sys/kernel/random/uuid)
           cat > config.json <<EOF
           {
@@ -31,6 +29,12 @@ jobs:
               "protocol": "vmess",
               "settings": {
                 "clients": [{ "id": "$UUID", "alterId": 0 }]
+              },
+              "streamSettings": {
+                "network": "ws",
+                "wsSettings": {
+                  "path": "/"
+                }
               }
             }],
             "outbounds": [{"protocol": "freedom"}]
@@ -41,16 +45,10 @@ jobs:
 
       - name: Start Services and Get Info
         run: |
-          # Start V2Ray in the background
           ./v2ray -config=config.json &
-          
-          # Start Localtunnel in the background and save its output
           lt --port 8080 > lt.log &
+          sleep 15
           
-          # Wait for Localtunnel to generate the URL
-          sleep 10
-          
-          # Extract the URL from the log file
           PUBLIC_URL=$(cat lt.log | grep -o 'https://[^ ]*')
           
           echo "V2Ray server is running!"
@@ -60,8 +58,8 @@ jobs:
           echo "یوزر آیدی (UUID): ${{ env.USER_UUID }}"
           echo "آلتر آیدی (AlterId): 0"
           echo "پروتکل (Protocol): vmess"
-          echo "امنیت (Security): auto"
-          echo "انتقال (Transport): ws"
+          echo "انتقال (Transport/Network): ws"
+          echo "Path (مسیر): /"
           echo "TLS: فعال (tls)"
           echo "========================================"
           
